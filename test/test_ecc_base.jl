@@ -6,7 +6,6 @@ using InteractiveUtils
 import Nemo: GF
 import LinearAlgebra
 import Hecke: group_algebra, abelian_group, gens, quo, one
-import Oscar: free_group
 
 # generate instances of all implemented codes to make sure nothing skips being checked
 
@@ -44,6 +43,10 @@ test_gb_codes = [
 
 other_lifted_product_codes = []
 
+# Add some codes that require Oscar, hence do not work on Windows
+
+test_twobga_codes = []
+
 # [[882, 24, d≤24]] code from (B1) in Appendix B of [panteleev2021degenerate](@cite)
 l = 63
 GA = group_algebra(GF(2), abelian_group(l))
@@ -57,47 +60,57 @@ A[LinearAlgebra.diagind(A, 5)] .= GA(1)
 B = reshape([1 + x + x^6], (1, 1))
 push!(other_lifted_product_codes, LPCode(A, B))
 
-# [[72, 8, 9]] 2BGA code taken from Table I Block 1 of [lin2024quantum](@cite)
-F = free_group(["r"])
-r = gens(F)[1]
-G, = quo(F, [r^36])
-GA = group_algebra(GF(2), G)
-r = gens(G)[1]
-a = [one(G), r^28]
-b = [one(G), r, r^18, r^12, r^29, r^14]
-t1b1 = twobga_from_fp_group(a, b, GA)
+@static if !Sys.iswindows()
+  try
+    import Oscar: free_group
+    @info "Add group theoretic codes requiring Oscar"
+    # [[72, 8, 9]] 2BGA code taken from Table I Block 1 of [lin2024quantum](@cite)
+    F = free_group(["r"])
+    r = gens(F)[1]
+    G, = quo(F, [r^36])
+    GA = group_algebra(GF(2), G)
+    r = gens(G)[1]
+    a = [one(G), r^28]
+    b = [one(G), r, r^18, r^12, r^29, r^14]
+    t1b1 = twobga_from_fp_group(a, b, GA)
 
-# [[54, 6, 9]] 2BGA code taken from Table I Block 3 of [lin2024quantum](@cite)
-F = free_group(["r"])
-r = gens(F)[1]
-G, = quo(F, [r^27])
-GA = group_algebra(GF(2), G)
-r = gens(G)[1]
-a = [one(G), r, r^3, r^7]
-b = [one(G), r, r^12, r^19]
-t1b3 = twobga_from_fp_group(a, b, GA)
+    # [[54, 6, 9]] 2BGA code taken from Table I Block 3 of [lin2024quantum](@cite)
+    F = free_group(["r"])
+    r = gens(F)[1]
+    G, = quo(F, [r^27])
+    GA = group_algebra(GF(2), G)
+    r = gens(G)[1]
+    a = [one(G), r, r^3, r^7]
+    b = [one(G), r, r^12, r^19]
+    t1b3 = twobga_from_fp_group(a, b, GA)
 
-# [[16, 4, 4]] 2BGA taken from Appendix C, Table II of [lin2024quantum](@cite)
-F = free_group(["x", "s"])
-x, s = gens(F)
-G, = quo(F, [x^4, s^2, x * s * x^-1 * s^-1])
-GA = group_algebra(GF(2), G)
-x, s = gens(G)
-a = [one(G), x]
-b = [one(G), x, s, x^2, s*x, x^3]
-tb21 = twobga_from_fp_group(a, b, GA)
+    # [[16, 4, 4]] 2BGA taken from Appendix C, Table II of [lin2024quantum](@cite)
+    F = free_group(["x", "s"])
+    x, s = gens(F)
+    G, = quo(F, [x^4, s^2, x * s * x^-1 * s^-1])
+    GA = group_algebra(GF(2), G)
+    x, s = gens(G)
+    a = [one(G), x]
+    b = [one(G), x, s, x^2, s*x, x^3]
+    tb21 = twobga_from_fp_group(a, b, GA)
 
-# [[32, 8, 4]] 2BGA taken from Appendix C, Table II of [lin2024quantum](@cite)
-F = free_group(["x", "s"])
-x, s = gens(F)
-G, = quo(F, [x^8, s^2, x * s * x^-1 * s^-1])
-GA = group_algebra(GF(2), G)
-x, s = gens(G)
-a = [one(G), x^6]
-b = [one(G), s * x^7, s * x^4, x^6, s * x^5, s * x^2]
-tb22 = twobga_from_fp_group(a, b, GA)
+    # [[32, 8, 4]] 2BGA taken from Appendix C, Table II of [lin2024quantum](@cite)
+    F = free_group(["x", "s"])
+    x, s = gens(F)
+    G, = quo(F, [x^8, s^2, x * s * x^-1 * s^-1])
+    GA = group_algebra(GF(2), G)
+    x, s = gens(G)
+    a = [one(G), x^6]
+    b = [one(G), s * x^7, s * x^4, x^6, s * x^5, s * x^2]
+    tb22 = twobga_from_fp_group(a, b, GA)
 
-test_twobga_codes = [t1b1, t1b3, tb21, tb22]
+    append!(test_twobga_codes, [t1b1, t1b3, tb21, tb22])
+  catch e
+    @warn(e)
+  end
+end
+
+@info "length(test_twobga_codes): $(length(test_twobga_codes))"
 
 const code_instance_args = Dict(
     :Toric => [(3,3), (4,4), (3,6), (4,3), (5,5)],
